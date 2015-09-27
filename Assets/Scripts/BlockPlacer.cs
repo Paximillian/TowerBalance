@@ -2,9 +2,12 @@
 using System.Collections;
 using System;
 using System.Linq;
+using UnityEngine.EventSystems;
 
-public class BlockPlacer : MonoBehaviour
+public class BlockPlacer : MonoBehaviour, IPausible
 {
+    public bool Paused { get; set; }
+
     private const KeyCode k_PlacementButton = KeyCode.Space;
     private const string k_BlockTag = "Block";
     private const string k_CameraLimitLayer = "CameraLimits";
@@ -59,10 +62,22 @@ public class BlockPlacer : MonoBehaviour
                 {
                     dropBlock();
                 }
+                if (Input.GetMouseButtonDown(0))
+                {
+                    EventSystem eventSystem = EventSystem.current;
+                    if(!eventSystem.IsPointerOverGameObject() && eventSystem.currentSelectedGameObject == null)
+                    {
+                        dropBlock();
+                    }
+                }
 #elif UNITY_ANDROID || UNITY_IOS || UNITY_BLACKBERRY || UNITY_WP8 || UNITY_TIZEN
             if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
             {
-                dropBlock();
+                EventSystem eventSystem = EventSystem.current;
+                if(!eventSystem.IsPointerOverGameObject() && eventSystem.currentSelectedGameObject == null)
+                {
+                    dropBlock();
+                }
             }
 #endif
             }
@@ -78,15 +93,18 @@ public class BlockPlacer : MonoBehaviour
 
     private void dropBlock()
     {
-        ++m_LandedBlocks;
+        if (!Paused)
+        {
+            ++m_LandedBlocks;
 
-        m_HeldBlock.gravityScale = 1;
-        m_HeldBlock = null;
-        m_WaitingOnNextBlock = true;
-        
-        StopCoroutine(m_PlacerMover);
-        
-        StartCoroutine(scrollUp1Line());
+            m_HeldBlock.gravityScale = 1;
+            m_HeldBlock = null;
+            m_WaitingOnNextBlock = true;
+
+            StopCoroutine(m_PlacerMover);
+
+            StartCoroutine(scrollUp1Line());
+        }
     }
     
     private IEnumerator movePlacerPosition()
@@ -103,6 +121,15 @@ public class BlockPlacer : MonoBehaviour
          
         while (true)
         {
+            float delayTime = Time.time;
+            while (Paused)
+            {
+                yield return null;
+            }
+            delayTime = Time.time - delayTime;
+            timeAtFinish += delayTime;
+            timeAtStart += delayTime;
+
             float percentComplete = (Time.time - timeAtStart) / (timeAtFinish - timeAtStart);
             
             m_HorizontalDropPosition = Mathf.Lerp(movingLeft ? m_RightBorderHorizontalPosition : m_LeftBorderHorizontalPosition, movingLeft ? m_LeftBorderHorizontalPosition : m_RightBorderHorizontalPosition, percentComplete);
@@ -123,6 +150,10 @@ public class BlockPlacer : MonoBehaviour
         m_WaitingOnNextBlock = false;
 
         yield return new WaitForSeconds(m_TimeBetweenBlocks);
+        while (Paused)
+        {
+            yield return null;
+        }
 
         m_HeldBlock = ObjectPoolManager.PullObject(k_BlockTag).GetComponent<Rigidbody2D>();
         m_PlacerMover = StartCoroutine(movePlacerPosition());
@@ -154,6 +185,15 @@ public class BlockPlacer : MonoBehaviour
 
         do
         {
+            float delayTime = Time.time;
+            while (Paused)
+            {
+                yield return null;
+            }
+            delayTime = Time.time - delayTime;
+            timeAtFinish += delayTime;
+            timeAtStart += delayTime;
+
             percentComplete = (Time.time - timeAtStart) / (timeAtFinish - timeAtStart);
 
             float newYPosition = Mathf.Lerp(startingVerticalPosition, endingVerticalPosition, percentComplete);
@@ -161,5 +201,15 @@ public class BlockPlacer : MonoBehaviour
 
             yield return null;
         } while (percentComplete < 1);
+    }
+
+    public void Pause()
+    {
+        Paused = true;
+    }
+
+    public void Resume()
+    {
+        Paused = false;
     }
 }
