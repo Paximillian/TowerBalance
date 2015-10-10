@@ -13,6 +13,7 @@ public class Menu : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
     }
 
     // Update is called once per frame
