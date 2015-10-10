@@ -3,7 +3,8 @@ using System.Collections;
 
 public class BaseFloor : MonoBehaviour
 {
-    private string k_BlockTag = "Block";
+    private const string k_BlockTag = "Block";
+    private const string k_GameOverScene = "GameOver";
 
     private int m_BlocksTouchingTheFloor = 0;
 
@@ -26,7 +27,7 @@ public class BaseFloor : MonoBehaviour
 
             if (m_BlocksTouchingTheFloor > 1)
             {
-                Debug.Log("Lost");
+                Application.LoadLevel(k_GameOverScene);
             }
         }
     }

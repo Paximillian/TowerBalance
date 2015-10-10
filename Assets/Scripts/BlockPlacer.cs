@@ -3,6 +3,7 @@ using System.Collections;
 using System;
 using System.Linq;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class BlockPlacer : MonoBehaviour, IPausible
 {
@@ -11,6 +12,9 @@ public class BlockPlacer : MonoBehaviour, IPausible
     private const KeyCode k_PlacementButton = KeyCode.Space;
     private const string k_BlockTag = "Block";
     private const string k_CameraLimitLayer = "CameraLimits";
+    private const string k_ScoreTextTag = "ScoreText";
+
+    private Text m_ScoreText;
 
     private Rigidbody2D m_HeldBlock = null;
     private bool m_WaitingOnNextBlock = true;
@@ -19,31 +23,37 @@ public class BlockPlacer : MonoBehaviour, IPausible
     private float m_LeftBorderHorizontalPosition;
     private int m_LandedBlocks = 0;
     private bool m_ReadyToPlay = false;
-    private int m_HeightOfBlockInPixels;
-    private int m_WidthOfBlockInPixels;
+    private float m_HeightOfBlockInPixels;
+    private float m_WidthOfBlockInPixels;
 
     private Coroutine m_PlacerMover;
     
     [SerializeField]
     private float m_TimeBetweenBlocks;
     [SerializeField]
+    private float m_ScreenSizeGrowthRate;
+    [SerializeField]
+    private float m_MaxScreenSizeGrowth;
+    [SerializeField]
     private AnimationCurve m_SideToSideTimePerLandedBlocks;
-    
+
     // Use this for initialization
     void Start()
     {
+        m_ScoreText = GameObject.FindGameObjectWithTag(k_ScoreTextTag).GetComponent<Text>();
+
         m_HeldBlock = ObjectPoolManager.PullObject(k_BlockTag).GetComponent<Rigidbody2D>();
         m_HeldBlock.GetComponent<Collider2D>().enabled = false;
+        m_HeldBlock.gravityScale = 0;
 
         SpriteRenderer sprite = m_HeldBlock.GetComponent<SpriteRenderer>();
-        m_HeightOfBlockInPixels = sprite.sprite.texture.height;
-        m_WidthOfBlockInPixels = sprite.sprite.texture.width;
-
-        Camera.main.orthographicSize = Camera.main.pixelHeight / sprite.sprite.pixelsPerUnit / 2;
+        Camera.main.orthographicSize = Screen.height / 2 / sprite.sprite.pixelsPerUnit;
+        m_HeightOfBlockInPixels = sprite.sprite.texture.height / sprite.sprite.pixelsPerUnit;
+        m_WidthOfBlockInPixels = sprite.sprite.texture.width / (sprite.sprite.texture.height / m_HeightOfBlockInPixels);
         StartCoroutine(scrollUpForGameStart());
         
-        m_HorizontalDropPosition = m_RightBorderHorizontalPosition = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width - m_WidthOfBlockInPixels / 2, Screen.height / 2, transform.position.z)).x;
-        m_LeftBorderHorizontalPosition = Camera.main.ScreenToWorldPoint(new Vector3(0  + m_WidthOfBlockInPixels / 2, Screen.height / 2, transform.position.z)).x;
+        m_HorizontalDropPosition = m_RightBorderHorizontalPosition = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width - m_WidthOfBlockInPixels, Screen.height / 2, transform.position.z)).x;
+        m_LeftBorderHorizontalPosition = Camera.main.ScreenToWorldPoint(new Vector3(0  + m_WidthOfBlockInPixels, Screen.height / 2, transform.position.z)).x;
        
         m_PlacerMover = StartCoroutine(movePlacerPosition());
     }
@@ -89,6 +99,8 @@ public class BlockPlacer : MonoBehaviour, IPausible
                 }
             }
         }
+
+        m_ScoreText.text = m_LandedBlocks.ToString();
     }
 
     private void dropBlock()
@@ -156,12 +168,13 @@ public class BlockPlacer : MonoBehaviour, IPausible
         }
 
         m_HeldBlock = ObjectPoolManager.PullObject(k_BlockTag).GetComponent<Rigidbody2D>();
+        m_HeldBlock.gravityScale = 0;
         m_PlacerMover = StartCoroutine(movePlacerPosition());
     }
 
     private IEnumerator scrollUpForGameStart()
     {
-        for (int i = 0; i < Mathf.RoundToInt(Camera.main.orthographicSize) - 1; ++i)
+        for (int i = 0; i < Mathf.RoundToInt(Camera.main.orthographicSize) / 2 - 1; ++i)
         {
             yield return StartCoroutine(scrollUp1Line(0.5f));
 
@@ -198,6 +211,8 @@ public class BlockPlacer : MonoBehaviour, IPausible
 
             float newYPosition = Mathf.Lerp(startingVerticalPosition, endingVerticalPosition, percentComplete);
             transform.position = new Vector3(transform.position.x, newYPosition, transform.position.z);
+
+            Camera.main.orthographicSize = Math.Max(Camera.main.orthographicSize + Time.deltaTime * m_ScreenSizeGrowthRate, m_MaxScreenSizeGrowth);
 
             yield return null;
         } while (percentComplete < 1);

@@ -4,6 +4,7 @@ using UnityEngine.Advertisements;
 
 public class UnityAds : MonoBehaviour
 {
+#if UNITY_ANDROID || UNITY_IOS
     private void Start()
     {
         if (!Advertisement.isInitialized)
@@ -39,4 +40,5 @@ public class UnityAds : MonoBehaviour
 
         Game.Resume();
     }
+#endif
 }
