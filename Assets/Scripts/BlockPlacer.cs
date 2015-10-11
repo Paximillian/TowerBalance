@@ -27,7 +27,6 @@ public class BlockPlacer : MonoBehaviour, IPausible
     private bool m_ReadyToPlay = false;
     private float m_HeightOfBlockInPixels;
     private float m_WidthOfBlockInPixels;
-    private float m_BlockTexturePixelHeight;
 
     private Coroutine m_PlacerMover;
     
@@ -51,7 +50,6 @@ public class BlockPlacer : MonoBehaviour, IPausible
 
         SpriteRenderer sprite = m_HeldBlock.GetComponent<SpriteRenderer>();
         //Camera.main.orthographicSize = Screen.height / 2 / sprite.sprite.pixelsPerUnit;
-        m_BlockTexturePixelHeight = sprite.sprite.texture.height;
         m_HeightOfBlockInPixels = sprite.sprite.pixelsPerUnit;
         m_WidthOfBlockInPixels = sprite.sprite.texture.width / (sprite.sprite.texture.height / m_HeightOfBlockInPixels);
         StartCoroutine(scrollUpForGameStart());
