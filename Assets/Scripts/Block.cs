@@ -19,7 +19,7 @@ public class Block : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D i_Collision)
     {
-        if(!m_BrickHitSound.isPlaying && !Game.Lost)
+        if(!m_BrickHitSound.isPlaying)
         {
             m_BrickHitSound.Play();
         }
