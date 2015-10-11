@@ -10,10 +10,13 @@ public class Menu : MonoBehaviour
     private const string k_CreditsScene = "Credits";
     private const string k_MainMenuScene = "MainMenu";
 
+    private AudioSource m_MenuButtonSound;
+
     // Use this for initialization
     void Start()
     {
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        m_MenuButtonSound = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -27,11 +30,14 @@ public class Menu : MonoBehaviour
 
     public void StartGame()
     {
+        m_MenuButtonSound.Play();
+        Game.Lost = false;
         Application.LoadLevel(k_GameScene);
     }
     
     public void HighScores()
     {
+        m_MenuButtonSound.Play();
         if(!Social.localUser.authenticated)
         {
             PlayGamesClientConfiguration config = new PlayGamesClientConfiguration.Builder().Build();
@@ -56,11 +62,13 @@ public class Menu : MonoBehaviour
 
     public void Credits()
     {
+        m_MenuButtonSound.Play();
         Application.LoadLevel(k_CreditsScene);
     }
 
     public void MainMenu()
     {
+        m_MenuButtonSound.Play();
         Application.LoadLevel(k_MainMenuScene);
     }
 }

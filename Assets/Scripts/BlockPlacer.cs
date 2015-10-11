@@ -16,6 +16,7 @@ public class BlockPlacer : MonoBehaviour, IPausible
     private const string k_GameOverScene = "GameOver";
 
     private Text m_ScoreText;
+    private AudioSource m_GameOverSound;
 
     private Rigidbody2D m_HeldBlock = null;
     private bool m_WaitingOnNextBlock = true;
@@ -43,6 +44,7 @@ public class BlockPlacer : MonoBehaviour, IPausible
     void Start()
     {
         m_ScoreText = GameObject.FindGameObjectWithTag(k_ScoreTextTag).GetComponent<Text>();
+        m_GameOverSound = GetComponent<AudioSource>();
 
         m_HeldBlock = ObjectPoolManager.PullObject(k_BlockTag).GetComponent<Rigidbody2D>();
         m_HeldBlock.GetComponent<Collider2D>().enabled = false;
@@ -223,22 +225,38 @@ public class BlockPlacer : MonoBehaviour, IPausible
 
     public IEnumerator LostGame()
     {
-        m_WaitingOnNextBlock = false;
-        if(m_HeldBlock)
+        if(!Game.Lost)
         {
-            m_HeldBlock.gameObject.SetActive(false);
+            Game.Lost = true;
+
+            m_GameOverSound.Play();
+            
+            m_WaitingOnNextBlock = false;
+            if(m_HeldBlock)
+            {
+                m_HeldBlock.gameObject.SetActive(false);
+            }
+            m_HeldBlock = null;
+
+            while(Vector3.Distance(transform.position, new Vector3(0, 0, transform.position.z)) > 1)
+            {
+                transform.position = Vector3.Lerp(transform.position, new Vector3(0, 0, transform.position.z), Time.deltaTime);
+                if(m_GameOverSound.time >= 0.4f)
+                {
+                    m_GameOverSound.mute = false;
+                    m_GameOverSound.Play();
+                }
+                else if(m_GameOverSound.time >= 0.2f)
+                {
+                    m_GameOverSound.mute = true;
+                }
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(3);
+
+            Application.LoadLevel(k_GameOverScene);
         }
-        m_HeldBlock = null;
-
-        while(Vector3.Distance(transform.position, new Vector3(0, 0, transform.position.z)) > 1)
-        {
-            transform.position = Vector3.Lerp(transform.position, new Vector3(0, 0, transform.position.z), Time.deltaTime);
-            yield return null;
-        }
-
-        yield return new WaitForSeconds(3);
-
-        Application.LoadLevel(k_GameOverScene);
     }
 
     public void Pause()

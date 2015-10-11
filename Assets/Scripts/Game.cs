@@ -3,6 +3,13 @@ using System.Collections;
 
 public static class Game
 {
+    public static bool Lost { get; set; }
+
+    static Game()
+    {
+        Lost = false;
+    }
+
     public static void Pause()
     {
         foreach (GameObject gObject in GameObject.FindObjectsOfType<GameObject>())
