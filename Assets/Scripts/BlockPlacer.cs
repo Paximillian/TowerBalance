@@ -20,16 +20,17 @@ public class BlockPlacer : MonoBehaviour, IPausible
     private Rigidbody2D m_HeldBlock = null;
     private bool m_WaitingOnNextBlock = true;
     private float m_HorizontalDropPosition;
-    private float m_RightBorderHorizontalPosition;
-    private float m_LeftBorderHorizontalPosition;
     
-    private int m_LandedBlocks = 0;
     private bool m_ReadyToPlay = false;
     private float m_HeightOfBlockInPixels;
     private float m_WidthOfBlockInPixels;
 
     private Coroutine m_PlacerMover;
     
+    [SerializeField]
+    private Transform m_RightBorderHorizontalPosition;
+    [SerializeField]
+    private Transform m_LeftBorderHorizontalPosition;
     [SerializeField]
     private float m_TimeBetweenBlocks;
     [SerializeField]
@@ -54,8 +55,7 @@ public class BlockPlacer : MonoBehaviour, IPausible
         m_WidthOfBlockInPixels = sprite.sprite.texture.width / (sprite.sprite.texture.height / m_HeightOfBlockInPixels);
         StartCoroutine(scrollUpForGameStart());
         
-        m_HorizontalDropPosition = m_RightBorderHorizontalPosition = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width - m_WidthOfBlockInPixels, Screen.height / 2, transform.position.z)).x;
-        m_LeftBorderHorizontalPosition = Camera.main.ScreenToWorldPoint(new Vector3(0  + m_WidthOfBlockInPixels, Screen.height / 2, transform.position.z)).x;
+        m_HorizontalDropPosition = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width - m_WidthOfBlockInPixels, Screen.height / 2, transform.position.z)).x;
        
         m_PlacerMover = StartCoroutine(movePlacerPosition());
     }
@@ -102,14 +102,18 @@ public class BlockPlacer : MonoBehaviour, IPausible
             }
         }
 
-        m_ScoreText.text = m_LandedBlocks.ToString();
+        m_ScoreText.text = Game.Score.ToString();
     }
 
     private void dropBlock()
     {
         if (!Paused)
         {
-            ++m_LandedBlocks;
+            Game.AddPoint();
+            if(Game.IsNewHighScore())
+            {
+                StartCoroutine(HighScoreMessage());
+            }
 
             m_HeldBlock.gravityScale = 1;
             m_HeldBlock = null;
@@ -120,7 +124,25 @@ public class BlockPlacer : MonoBehaviour, IPausible
             StartCoroutine(scrollUp1Line());
         }
     }
-    
+
+    private IEnumerator HighScoreMessage()
+    {
+        Transform recordText = GameObject.Find("Record").transform;
+        recordText.GetComponent<Text>().enabled = true;
+
+        float rotationSpeed = 3;
+
+        while(rotationSpeed > 1)
+        {
+            rotationSpeed -= Time.deltaTime;
+            recordText.Rotate(0, 0, rotationSpeed * 1.5f);
+            yield return null;
+        }
+        
+        recordText.GetComponent<Text>().enabled = false;
+        recordText.rotation = Quaternion.identity;
+    }
+
     private IEnumerator movePlacerPosition()
     {
         while (!m_ReadyToPlay)
@@ -131,7 +153,7 @@ public class BlockPlacer : MonoBehaviour, IPausible
         bool movingLeft = true;
         
         float timeAtStart = Time.time;
-        float timeAtFinish = timeAtStart + m_SideToSideTimePerLandedBlocks.Evaluate(m_LandedBlocks);
+        float timeAtFinish = timeAtStart + m_SideToSideTimePerLandedBlocks.Evaluate(Game.Score);
          
         while (true)
         {
@@ -146,12 +168,13 @@ public class BlockPlacer : MonoBehaviour, IPausible
 
             float percentComplete = (Time.time - timeAtStart) / (timeAtFinish - timeAtStart);
             
-            m_HorizontalDropPosition = Mathf.Lerp(movingLeft ? m_RightBorderHorizontalPosition : m_LeftBorderHorizontalPosition, movingLeft ? m_LeftBorderHorizontalPosition : m_RightBorderHorizontalPosition, percentComplete);
+            float offset = 6;
+            m_HorizontalDropPosition = Mathf.Lerp(movingLeft ? m_RightBorderHorizontalPosition.position.x - offset : m_LeftBorderHorizontalPosition.position.x + offset, movingLeft ? m_LeftBorderHorizontalPosition.position.x + offset : m_RightBorderHorizontalPosition.position.x - offset, percentComplete);
             
             if (percentComplete >= 1)
             {
                 timeAtStart = Time.time;
-                timeAtFinish = timeAtStart + m_SideToSideTimePerLandedBlocks.Evaluate(m_LandedBlocks);
+                timeAtFinish = timeAtStart + m_SideToSideTimePerLandedBlocks.Evaluate(Game.Score);
                 movingLeft = !movingLeft;
             }
 

@@ -1,37 +1,75 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
 public static class Game
 {
     public static bool Lost { get; set; }
 
+    public static int Score { get; private set; }
+
+    public static bool IsPaused { get; private set; }
+
     static Game()
     {
         Lost = false;
+        Score = 0;
+    }
+
+    public static void AddPoint()
+    {
+        ++Score;
+    }
+
+    public static bool IsNewHighScore()
+    {
+        bool newScore = false;
+
+        if(Score == PlayerPrefs.GetInt("HighScore", 0) + 1)
+        {
+            newScore = true;
+        }
+
+        return newScore;
+    }
+
+    public static void ResetScore()
+    {
+        Score = 0;
     }
 
     public static void Pause()
     {
-        foreach (GameObject gObject in GameObject.FindObjectsOfType<GameObject>())
+        if(!IsPaused)
         {
-            IPausible pausibleObject = gObject.GetComponent<IPausible>();
+            IsPaused = true;
 
-            if (pausibleObject != null)
+            foreach(GameObject gObject in GameObject.FindObjectsOfType<GameObject>())
             {
-                pausibleObject.Pause();
+                IPausible pausibleObject = gObject.GetComponent<IPausible>();
+
+                if(pausibleObject != null)
+                {
+                    pausibleObject.Pause();
+                }
             }
         }
     }
 
     public static void Resume()
     {
-        foreach (GameObject gObject in GameObject.FindObjectsOfType<GameObject>())
+        if(IsPaused)
         {
-            IPausible pausibleObject = gObject.GetComponent<IPausible>();
+            IsPaused = false;
 
-            if (pausibleObject != null)
+            foreach(GameObject gObject in GameObject.FindObjectsOfType<GameObject>())
             {
-                pausibleObject.Resume();
+                IPausible pausibleObject = gObject.GetComponent<IPausible>();
+
+                if(pausibleObject != null)
+                {
+                    pausibleObject.Resume();
+                }
             }
         }
     }

@@ -7,13 +7,13 @@ public class PauseButton : MonoBehaviour
 
     private AudioSource m_MenuButtonSound;
 
+    [SerializeField]
     public GameObject m_PauseMenu;
 
     // Use this for initialization
     void Start()
     {
         m_MenuButtonSound = GetComponent<AudioSource>();
-       // m_PauseMenu = GameObject.Find("PauseMenu");
     }
 
     // Update is called once per frame
