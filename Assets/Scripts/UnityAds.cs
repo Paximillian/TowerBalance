@@ -4,7 +4,7 @@ using UnityEngine.Advertisements;
 
 public class UnityAds : MonoBehaviour
 {
-#if UNITY_ANDROID || UNITY_IOS
+#if (UNITY_ANDROID || UNITY_IOS) && UNITY_5_2
     private void Start()
     {
         if (!Advertisement.isInitialized)

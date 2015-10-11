@@ -13,6 +13,7 @@ public class BlockPlacer : MonoBehaviour, IPausible
     private const string k_BlockTag = "Block";
     private const string k_CameraLimitLayer = "CameraLimits";
     private const string k_ScoreTextTag = "ScoreText";
+    private const string k_GameOverScene = "GameOver";
 
     private Text m_ScoreText;
 
@@ -21,10 +22,12 @@ public class BlockPlacer : MonoBehaviour, IPausible
     private float m_HorizontalDropPosition;
     private float m_RightBorderHorizontalPosition;
     private float m_LeftBorderHorizontalPosition;
+    
     private int m_LandedBlocks = 0;
     private bool m_ReadyToPlay = false;
     private float m_HeightOfBlockInPixels;
     private float m_WidthOfBlockInPixels;
+    private float m_BlockTexturePixelHeight;
 
     private Coroutine m_PlacerMover;
     
@@ -47,8 +50,9 @@ public class BlockPlacer : MonoBehaviour, IPausible
         m_HeldBlock.gravityScale = 0;
 
         SpriteRenderer sprite = m_HeldBlock.GetComponent<SpriteRenderer>();
-        Camera.main.orthographicSize = Screen.height / 2 / sprite.sprite.pixelsPerUnit;
-        m_HeightOfBlockInPixels = sprite.sprite.texture.height / sprite.sprite.pixelsPerUnit;
+        //Camera.main.orthographicSize = Screen.height / 2 / sprite.sprite.pixelsPerUnit;
+        m_BlockTexturePixelHeight = sprite.sprite.texture.height;
+        m_HeightOfBlockInPixels = sprite.sprite.pixelsPerUnit;
         m_WidthOfBlockInPixels = sprite.sprite.texture.width / (sprite.sprite.texture.height / m_HeightOfBlockInPixels);
         StartCoroutine(scrollUpForGameStart());
         
@@ -174,7 +178,7 @@ public class BlockPlacer : MonoBehaviour, IPausible
 
     private IEnumerator scrollUpForGameStart()
     {
-        for (int i = 0; i < Mathf.RoundToInt(Camera.main.orthographicSize) / 2 - 1; ++i)
+        for (int i = 0; i < Mathf.RoundToInt(Camera.main.orthographicSize) / 2 - 3; ++i)
         {
             yield return StartCoroutine(scrollUp1Line(0.5f));
 
@@ -192,9 +196,10 @@ public class BlockPlacer : MonoBehaviour, IPausible
         float percentComplete = 0;
 
         float startingVerticalPosition = transform.position.y;
-        Vector3 currentScreenPosition = Camera.main.WorldToScreenPoint(transform.position);
-        Vector3 targetWorldPosition = Camera.main.ScreenToWorldPoint(currentScreenPosition + Vector3.up * m_HeightOfBlockInPixels);
-        float endingVerticalPosition = targetWorldPosition.y;
+        //Vector3 currentScreenPosition = Camera.main.WorldToScreenPoint(transform.position);
+        //Vector3 targetWorldPosition = Camera.main.ScreenToWorldPoint(currentScreenPosition + Vector3.up * (m_BlockTexturePixelHeight / m_HeightOfBlockInPixels + 2));
+        //float endingVerticalPosition = targetWorldPosition.y;
+        float endingVerticalPosition = startingVerticalPosition + 1.1f;
 
         do
         {
@@ -212,10 +217,30 @@ public class BlockPlacer : MonoBehaviour, IPausible
             float newYPosition = Mathf.Lerp(startingVerticalPosition, endingVerticalPosition, percentComplete);
             transform.position = new Vector3(transform.position.x, newYPosition, transform.position.z);
 
-            Camera.main.orthographicSize = Math.Max(Camera.main.orthographicSize + Time.deltaTime * m_ScreenSizeGrowthRate, m_MaxScreenSizeGrowth);
+            Camera.main.orthographicSize = Math.Min(Camera.main.orthographicSize + Time.deltaTime * m_ScreenSizeGrowthRate, m_MaxScreenSizeGrowth);
 
             yield return null;
         } while (percentComplete < 1);
+    }
+
+    public IEnumerator LostGame()
+    {
+        m_WaitingOnNextBlock = false;
+        if(m_HeldBlock)
+        {
+            m_HeldBlock.gameObject.SetActive(false);
+        }
+        m_HeldBlock = null;
+
+        while(Vector3.Distance(transform.position, new Vector3(0, 0, transform.position.z)) > 1)
+        {
+            transform.position = Vector3.Lerp(transform.position, new Vector3(0, 0, transform.position.z), Time.deltaTime);
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(3);
+
+        Application.LoadLevel(k_GameOverScene);
     }
 
     public void Pause()
