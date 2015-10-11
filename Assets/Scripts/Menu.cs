@@ -32,6 +32,8 @@ public class Menu : MonoBehaviour
     {
         m_MenuButtonSound.Play();
         Game.Lost = false;
+        Game.ResetScore();
+        Game.Resume();
         Application.LoadLevel(k_GameScene);
     }
     
