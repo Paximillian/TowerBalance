@@ -31,6 +31,10 @@ public class Menu : MonoBehaviour
     {
         if(!Social.localUser.authenticated)
         {
+            PlayGamesClientConfiguration config = new PlayGamesClientConfiguration.Builder().Build();
+            PlayGamesPlatform.InitializeInstance(config);
+            PlayGamesPlatform.Activate();
+
             Social.localUser.Authenticate((success) =>
             {
                 if(success)
